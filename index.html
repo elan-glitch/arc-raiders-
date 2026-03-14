@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClipForge — Gaming Auto-Clipper</title>
+<link href="https://fonts.googleapis.com/css2?family=Rajdhani:wght@400;500;600;700&family=Share+Tech+Mono&family=Exo+2:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #08090d;
+  --s1: #0d0f16;
+  --s2: #111520;
+  --s3: #161b28;
+  --border: #1e2535;
+  --border2: #28334a;
+  --orange: #ff6b1a;
+  --orange2: #ff8c42;
+  --red: #ff2d4a;
+  --cyan: #00d4ff;
+  --green: #00ff88;
+  --gold: #ffd700;
+  --text: #c8d8f0;
+  --muted: #4a5870;
+}
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: 'Exo 2', sans-serif;
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* Hexagonal grid background */
+body::before {
+  content: '';
+  position: fixed; inset: 0;
+  background-image:
+    linear-gradient(rgba(255,107,26,.04) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(255,107,26,.04) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none; z-index: 0;
+}
+
+/* Glow orbs */
+body::after {
+  content: '';
+  position: fixed;
+  width: 600px; height: 600px;
+  background: radial-gradient(circle, rgba(255,107,26,.06) 0%, transparent 70%);
+  top: -200px; right: -200px;
+  pointer-events: none; z-index: 0;
+}
+
+.wrap { max-width: 1140px; margin: 0 auto; padding: 0 18px; position: relative; z-index: 1; }
+
+/* ── HEADER ── */
+header {
+  border-bottom: 1px solid var(--border);
+  padding: 14px 0;
+  background: rgba(8,9,13,.96);
+  backdrop-filter: blur(20px);
+  position: sticky; top: 0; z-index: 100;
+}
+.hd { display: flex; align-items: center; justify-content: space-between; }
+.logo {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 28px; font-weight: 700;
+  letter-spacing: 4px; text-transform: uppercase;
+  display: flex; align-items: center; gap: 10px;
+}
+.logo-icon { color: var(--orange); text-shadow: 0 0 20px rgba(255,107,26,.6); }
+.logo-sub { color: var(--orange); }
+.game-badge {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 10px; letter-spacing: 2px;
+  padding: 4px 12px; border-radius: 3px;
+  background: rgba(255,107,26,.1);
+  border: 1px solid rgba(255,107,26,.3);
+  color: var(--orange);
+  text-transform: uppercase;
+}
+
+/* ── HERO ── */
+.hero { padding: 48px 0 36px; }
+.hero-inner { display: grid; grid-template-columns: 1fr 400px; gap: 40px; align-items: center; }
+.hero-text h1 {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: clamp(38px, 5.5vw, 68px);
+  font-weight: 700; line-height: .92;
+  text-transform: uppercase; letter-spacing: 2px;
+  margin-bottom: 14px;
+}
+.hero-text h1 .o { color: var(--orange); text-shadow: 0 0 40px rgba(255,107,26,.4); }
+.hero-text p { color: var(--muted); font-size: 15px; line-height: 1.7; max-width: 420px; }
+
+/* DETECTION PILLS */
+.detect-pills { display: flex; flex-wrap: wrap; gap: 7px; margin-top: 20px; }
+.dp {
+  font-family: 'Share Tech Mono', monospace;
+  font-size: 11px; padding: 5px 12px;
+  border-radius: 4px; border: 1px solid;
+  display: flex; align-items: center; gap: 5px;
+  letter-spacing: .5px;
+}
+.dp-shot { border-color: rgba(255,45,74,.4); color: var(--red); background: rgba(255,45,74,.06); }
+.dp-boom { border-color: rgba(255,107,26,.4); color: var(--orange); background: rgba(255,107,26,.06); }
+.dp-voice { border-color: rgba(0,212,255,.4); color: var(--cyan); background: rgba(0,212,255,.06); }
+.dp-kill { border-color: rgba(255,215,0,.4); color: var(--gold); background: rgba(255,215,0,.06); }
+
+/* HERO STATS */
+.hero-stats { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.hs {
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: 8px; padding: 18px; text-align: center;
+  position: relative; overflow: hidden;
+}
+.hs::before {
+  content: ''; position: absolute; top: 0; left: 0; right: 0;
+  height: 2px; background: linear-gradient(90deg, transparent, var(--orange), transparent);
+}
+.hs-n {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 32px; font-weight: 700; color: var(--orange);
+  line-height: 1;
+}
+.hs-l { font-size: 11px; color: var(--muted); margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; font-family: 'Share Tech Mono', monospace; }
+
+/* ── MAIN GRID ── */
+.main { display: grid; grid-template-columns: 1fr 320px; gap: 16px; padding-bottom: 60px; }
+.left { display: flex; flex-direction: column; gap: 14px; }
+.right { display: flex; flex-direction: column; gap: 14px; }
+
+/* ── PANELS ── */
+.panel {
+  background: var(--s2); border: 1px solid var(--border);
+  border-radius: 10px; overflow: hidden;
+}
+.ph {
+  padding: 12px 18px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 9px;
+  background: rgba(255,255,255,.015);
+}
+.ph-icon { font-size: 14px; }
+.ph-title {
+  font-family: 'Rajdhani', sans-serif;
+  font-size: 13px; font-weight: 700;
+  text-transform: uppercase; letter-spacing: 2px; color: var(--muted);
+}
+.ph-extra { margin-left: auto; font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--muted); }
+.pb { padding: 18px; }
+
+/* ── URL INPUT ── */
+.url-row { display: flex; gap: 8px; margin-bottom: 12px; }
+.url-in {
+  flex: 1; background: var(--s1); border: 1px solid var(--border);
+  color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 13px;
+  padding: 11px 14px; border-radius: 7px; outline: none;
+  transition: border-color .2s;
+}
+.url-in:focus { border-color: var(--orange); }
+.url-in::placeholder { color: var(--muted); }
+
+.btn {
+  font-family: 'Rajdhani', sans-serif; font-size: 14px; font-weight: 700;
+  letter-spacing: 2px; text-transform: uppercase; padding: 11px 20px;
+  border-radius: 7px; border: none; cursor: pointer; transition: all .18s;
+  white-space: nowrap;
+}
+.btn:disabled { opacity: .35; cursor: not-allowed; transform: none !important; }
+.btn-o { background: var(--orange); color: #000; }
+.btn-o:hover:not(:disabled) { background: var(--orange2); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(255,107,26,.35); }
+.btn-ghost { background: transparent; color: var(--text); border: 1px solid var(--border2); }
+.btn-ghost:hover:not(:disabled) { border-color: var(--orange); color: var(--orange); }
+.btn-red { background: var(--red); color: #fff; }
+.btn-red:hover:not(:disabled) { background: #ff4d63; transform: translateY(-1px); }
+.btn-full { width: 100%; padding: 14px; font-size: 16px; }
+.btn-dl {
+  background: linear-gradient(135deg, var(--orange), var(--red));
+  color: #fff; font-size: 13px; padding: 9px 16px;
+}
+.btn-dl:hover:not(:disabled) { opacity: .88; transform: translateY(-1px); }
+
+/* FORMAT TOGGLE */
+.fmt-row { display: flex; gap: 8px; margin-bottom: 16px; }
+.fmt-btn {
+  flex: 1; padding: 10px; border-radius: 7px;
+  border: 1px solid var(--border2); background: transparent;
+  color: var(--muted); font-family: 'Rajdhani', sans-serif;
+  font-size: 13px; font-weight: 700; letter-spacing: 1px;
+  text-transform: uppercase; cursor: pointer; transition: all .15s;
+  text-align: center;
+}
+.fmt-btn.active { border-color: var(--orange); color: var(--orange); background: rgba(255,107,26,.08); }
+.fmt-hint { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--muted); display: block; margin-top: 3px; }
+
+/* STATUS */
+.sbar {
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: 7px; padding: 11px 14px;
+  display: flex; align-items: center; gap: 9px;
+}
+.sd { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; animation: pulse 2s infinite; }
+@keyframes pulse { 0%,100%{transform:scale(1)} 50%{transform:scale(1.4);opacity:.6} }
+.sd-g { background: var(--green); box-shadow: 0 0 8px var(--green); }
+.sd-o { background: var(--orange); box-shadow: 0 0 8px var(--orange); }
+.sd-r { background: var(--red); box-shadow: 0 0 8px var(--red); }
+.stxt { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--muted); }
+
+/* PIPELINE */
+.pipe-steps { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
+.ps {
+  display: flex; align-items: center; gap: 9px;
+  padding: 9px 12px; background: var(--s1);
+  border: 1px solid var(--border); border-radius: 7px;
+  transition: border-color .25s;
+}
+.ps.run { border-color: var(--orange); background: rgba(255,107,26,.05); }
+.ps.done { border-color: var(--green); background: rgba(0,255,136,.04); }
+.ps-icon { font-size: 16px; width: 22px; text-align: center; }
+.ps-info { flex: 1; }
+.ps-name { font-weight: 600; font-size: 13px; }
+.ps-sub { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.ps-tag {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  padding: 2px 8px; border-radius: 3px;
+}
+.t-w { background: rgba(255,255,255,.05); color: var(--muted); }
+.t-r { background: rgba(255,107,26,.12); color: var(--orange); }
+.t-d { background: rgba(0,255,136,.1); color: var(--green); }
+
+/* PROGRESS */
+.prog { margin-bottom: 14px; }
+.prog-head { display: flex; justify-content: space-between; font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 6px; }
+.prog-track { height: 3px; background: var(--border); border-radius: 2px; overflow: hidden; }
+.prog-fill { height: 100%; background: linear-gradient(90deg, var(--red), var(--orange)); border-radius: 2px; transition: width .4s; width: 0%; }
+
+/* AI STATUS */
+.ai-st { display: none; align-items: center; gap: 9px; padding: 11px 13px; background: rgba(255,107,26,.07); border: 1px solid rgba(255,107,26,.25); border-radius: 7px; margin-bottom: 12px; }
+.ai-st.on { display: flex; }
+.spin { width: 16px; height: 16px; border: 2px solid rgba(255,107,26,.2); border-top-color: var(--orange); border-radius: 50%; animation: spin .7s linear infinite; flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.ai-txt { font-family: 'Share Tech Mono', monospace; font-size: 12px; color: var(--orange); }
+
+/* TEXT OVERLAY SECTION */
+.text-overlay-section { background: var(--s1); border: 1px solid var(--border); border-radius: 8px; padding: 14px; margin-bottom: 14px; }
+.to-label { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px; }
+.text-in {
+  width: 100%; background: var(--s2); border: 1px solid var(--border);
+  color: var(--text); font-family: 'Exo 2', sans-serif; font-size: 14px;
+  padding: 10px 12px; border-radius: 6px; outline: none;
+  transition: border-color .2s; margin-bottom: 10px;
+}
+.text-in:focus { border-color: var(--orange); }
+.text-in::placeholder { color: var(--muted); }
+.style-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; }
+.style-btn {
+  padding: 8px 4px; border-radius: 6px; border: 1px solid var(--border);
+  background: transparent; color: var(--muted); font-size: 11px;
+  font-family: 'Rajdhani', sans-serif; font-weight: 600; letter-spacing: 1px;
+  text-transform: uppercase; cursor: pointer; transition: all .15s; text-align: center;
+}
+.style-btn.active { border-color: var(--orange); color: var(--orange); background: rgba(255,107,26,.08); }
+.style-preview { height: 50px; background: var(--s2); border: 1px solid var(--border); border-radius: 6px; display: flex; align-items: center; justify-content: center; margin-top: 10px; position: relative; overflow: hidden; }
+
+/* HIGHLIGHTS */
+.hl-list { display: flex; flex-direction: column; gap: 8px; }
+.hl {
+  background: var(--s1); border: 1px solid var(--border); border-radius: 8px;
+  padding: 12px 14px; display: flex; align-items: flex-start; gap: 10px;
+  cursor: pointer; transition: all .17s;
+}
+.hl:hover { border-color: var(--orange); background: rgba(255,107,26,.04); }
+.hl.sel { border-color: var(--gold); background: rgba(255,215,0,.04); }
+.hl-score { font-family: 'Rajdhani', sans-serif; font-size: 26px; font-weight: 700; color: var(--gold); min-width: 44px; text-align: center; line-height: 1; }
+.hl-info { flex: 1; min-width: 0; }
+.hl-title { font-size: 14px; font-weight: 600; margin-bottom: 3px; }
+.hl-meta { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 3px; }
+.hl-reason { font-size: 11px; color: var(--muted); }
+.hl-right { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; }
+.etag {
+  font-family: 'Share Tech Mono', monospace; font-size: 10px;
+  padding: 2px 8px; border-radius: 3px; text-transform: uppercase;
+}
+.et-gunshot { background: rgba(255,45,74,.1); color: var(--red); border: 1px solid rgba(255,45,74,.3); }
+.et-explosion { background: rgba(255,107,26,.1); color: var(--orange); border: 1px solid rgba(255,107,26,.3); }
+.et-voice { background: rgba(0,212,255,.1); color: var(--cyan); border: 1px solid rgba(0,212,255,.3); }
+.et-killstreak { background: rgba(255,215,0,.1); color: var(--gold); border: 1px solid rgba(255,215,0,.3); }
+.et-hype { background: rgba(0,255,136,.1); color: var(--green); border: 1px solid rgba(0,255,136,.3); }
+
+/* SIGNAL BARS */
+.sig-row { display: flex; gap: 4px; margin-top: 5px; }
+.sig-b { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.sig-track { width: 20px; height: 18px; background: var(--border); border-radius: 2px; overflow: hidden; display: flex; align-items: flex-end; }
+.sig-fill { width: 100%; border-radius: 2px; }
+.sig-l { font-family: 'Share Tech Mono', monospace; font-size: 8px; color: var(--muted); }
+
+/* CLIP CARD */
+.clip-card {
+  background: var(--s1); border: 1px solid var(--border);
+  border-radius: 8px; overflow: hidden; margin-bottom: 10px;
+  transition: border-color .2s;
+}
+.clip-card:hover { border-color: var(--orange); }
+.clip-thumb {
+  height: 82px; display: flex; align-items: center; justify-content: center;
+  font-size: 28px; position: relative; overflow: hidden;
+  background: linear-gradient(135deg, #0d1520, #1a0d10);
+}
+.clip-thumb::before {
+  content: ''; position: absolute; inset: 0;
+  background: repeating-linear-gradient(45deg, transparent, transparent 6px, rgba(255,107,26,.025) 6px, rgba(255,107,26,.025) 12px);
+}
+.clip-dur { position: absolute; bottom: 5px; right: 7px; font-family: 'Share Tech Mono', monospace; font-size: 11px; background: rgba(0,0,0,.75); padding: 2px 6px; border-radius: 3px; }
+.clip-fmt { position: absolute; top: 5px; left: 7px; font-family: 'Share Tech Mono', monospace; font-size: 10px; padding: 2px 6px; border-radius: 3px; background: rgba(255,107,26,.2); color: var(--orange); border: 1px solid rgba(255,107,26,.3); }
+.clip-body { padding: 11px 13px; }
+.clip-name { font-size: 13px; font-weight: 600; margin-bottom: 3px; }
+.clip-detail { font-family: 'Share Tech Mono', monospace; font-size: 11px; color: var(--muted); margin-bottom: 8px; }
+.clip-acts { display: flex; gap: 6px; }
+.btn-sm {
+  font-family: 'Rajdhani', sans-serif; font-size: 11px; font-weight: 700;
+  letter-spacing: 1px; text-transform: uppercase; padding: 5px 10px;
+  border-radius: 5px; border: 1px solid var(--border2); background: transparent;
+  color: var(--text); cursor: pointer; transition: all .15s;
+}
+.btn-sm:hover { border-color: var(--orange); color: var(--orange); }
+.btn-sm-dl { background: var(--orange); color: #000; border-color: var(--orange); }
+.btn-sm-dl:hover { background: var(--orange2); }
+.btn-sm-del { color: var(--red); border-color: rgba(255,45,74,.3); }
+
+/* SIDEBAR SETTINGS */
+.sr { display: flex; align-items: center; justify-content: space-between; padding: 9px 0; border-bottom: 1px solid var(--border); }
+.sr:last-child { border-bottom: none; }
+.sn { font-size: 13px; font-weight: 600; }
+.ss { font-size: 11px; color: var(--muted); margin-top: 1px; }
+.tgl { width: 36px; height: 20px; background: var(--border2); border-radius: 10px; cursor: pointer; position: relative; transition: background .2s; flex-shrink: 0; border: none; }
+.tgl::after { content: ''; position: absolute; width: 14px; height: 14px; border-radius: 50%; background: #fff; top: 3px; left: 3px; transition: transform .2s; }
+.tgl.on { background: var(--orange); }
+.tgl.on::after { transform: translateX(16px); }
+.sel-in { width: 100%; background: var(--s1); border: 1px solid var(--border); color: var(--text); font-family: 'Share Tech Mono', monospace; font-size: 11px; padding: 7px 10px; border-radius: 5px; outline: none; }
+.sel-in:focus { border-color: var(--orange); }
+.slbl { font-family: 'Share Tech Mono', monospace; font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: 1px; margin-bottom: 7px; }
+.divider { height: 1px; background: var(--border); margin: 12px 0; }
+
+/* PLAT TAG */
+.plat { display: inline-flex; align-items: center; gap: 5px; font-family: 'Share Tech Mono', monospace; font-size: 11px; padding: 3px 9px; border-radius: 4px; margin-bottom: 11px; opacity: 0; transition: opacity .3s; }
+.plat.on { opacity: 1; }
+.plat-yt { background: rgba(255,0,0,.07); border: 1px solid rgba(255,0,0,.3); color: #ff4444; }
+.plat-tw { background: rgba(145,70,255,.07); border: 1px solid rgba(145,70,255,.3); color: #9146ff; }
+
+/* NOTIF */
+.notif { position: fixed; bottom: 20px; right: 20px; background: var(--s2); border-radius: 9px; padding: 13px 17px; font-size: 13px; transform: translateY(80px); opacity: 0; transition: all .28s cubic-bezier(.34,1.56,.64,1); z-index: 9000; max-width: 300px; box-shadow: 0 8px 32px rgba(0,0,0,.5); }
+.notif.on { transform: translateY(0); opacity: 1; }
+.nt { font-weight: 700; margin-bottom: 3px; font-family: 'Rajdhani', sans-serif; font-size: 15px; letter-spacing: 1px; text-transform: uppercase; }
+.nb { color: var(--muted); font-size: 12px; }
+
+.empty { text-align: center; padding: 24px; color: var(--muted); font-size: 13px; font-family: 'Share Tech Mono', monospace; line-height: 1.8; }
+
+@media(max-width:900px) { .hero-inner { grid-template-columns: 1fr; } .hero-stats { display: none; } }
+@media(max-width:720px) { .main { grid-template-columns: 1fr; } }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="wrap">
+    <div class="hd">
+      <div class="logo"><span class="logo-icon">⚡</span>Clip<span class="logo-sub">Forge</span></div>
+      <div class="game-badges" style="display:flex;gap:8px;">
+        <span class="game-badge">🎮 Arc Raiders</span>
+        <span class="game-badge" id="beStatus">Backend: checking...</span>
+      </div>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="hero">
+    <div class="hero-inner">
+      <div class="hero-text">
+        <h1>AUTO-CLIP<br>YOUR <span class="o">BEST</span><br>MOMENTS</h1>
+        <p>Detects gunshots, explosions, killstreaks and voice reactions in your Arc Raiders streams. Export as Shorts or full videos with custom text overlays.</p>
+        <div class="detect-pills">
+          <span class="dp dp-shot">🔫 Gunshot Detection</span>
+          <span class="dp dp-boom">💥 Explosion Events</span>
+          <span class="dp dp-voice">🎙 Voice Reactions</span>
+          <span class="dp dp-kill">⚡ Killstreaks</span>
+        </div>
+      </div>
+      <div class="hero-stats">
+        <div class="hs"><div class="hs-n" id="sClips">0</div><div class="hs-l">Clips Made</div></div>
+        <div class="hs"><div class="hs-n" id="sHL">0</div><div class="hs-l">Highlights</div></div>
+        <div class="hs"><div class="hs-n">$0</div><div class="hs-l">Total Cost</div></div>
+        <div class="hs"><div class="hs-n" id="sFmt">—</div><div class="hs-l">Format</div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="main">
+    <div class="left">
+
+      <!-- URL + FORMAT -->
+      <div class="panel">
+        <div class="ph"><span class="ph-icon">🎯</span><span class="ph-title">Stream Source</span></div>
+        <div class="pb">
+          <div class="url-row">
+            <input type="text" class="url-in" id="urlIn" placeholder="https://www.youtube.com/watch?v=... or https://www.twitch.tv/..." />
+            <button class="btn btn-o" onclick="startAnalysis()" id="mainBtn">Analyze</button>
+          </div>
+          <div class="plat" id="platTag"></div>
+
+          <!-- FORMAT SELECTION -->
+          <div style="margin-bottom:12px;">
+            <div class="slbl" style="margin-bottom:8px;">Output Format</div>
+            <div class="fmt-row">
+              <button class="fmt-btn active" id="fmt-video" onclick="setFmt('video',this)">
+                📹 Video
+                <span class="fmt-hint">16:9 · YouTube</span>
+              </button>
+              <button class="fmt-btn" id="fmt-shorts" onclick="setFmt('shorts',this)">
+                📱 Shorts
+                <span class="fmt-hint">9:16 · TikTok / Reels</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="sbar">
+            <div class="sd sd-g" id="sdot"></div>
+            <div class="stxt" id="stxt">Ready — paste a YouTube or Twitch URL</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- PIPELINE -->
+      <div class="panel">
+        <div class="ph"><span class="ph-icon">⚙️</span><span class="ph-title">Detection Pipeline</span><span class="ph-extra" id="ppct"></span></div>
+        <div class="pb">
+          <div class="ai-st" id="aiSt"><div class="spin"></div><div class="ai-txt" id="aiTxt">Processing...</div></div>
+          <div class="prog" id="progWrap" style="display:none;">
+            <div class="prog-head"><span id="progStep">Processing...</span><span id="progPct">0%</span></div>
+            <div class="prog-track"><div class="prog-fill" id="progFill"></div></div>
+          </div>
+          <div class="pipe-steps">
+            <div class="ps" id="ps1">
+              <span class="ps-icon">📥</span>
+              <div class="ps-info"><div class="ps-name">Download Stream</div><div class="ps-sub">yt-dlp extracts audio + video</div></div>
+              <span class="ps-tag t-w" id="ps1b">waiting</span>
+            </div>
+            <div class="ps" id="ps2">
+              <span class="ps-icon">🎵</span>
+              <div class="ps-info"><div class="ps-name">Gaming Audio Detection</div><div class="ps-sub">Gunshots · explosions · voice spikes · rapid fire</div></div>
+              <span class="ps-tag t-w" id="ps2b">waiting</span>
+            </div>
+            <div class="ps" id="ps3">
+              <span class="ps-icon">🎥</span>
+              <div class="ps-info"><div class="ps-name">Video Frame Analysis</div><div class="ps-sub">Flash detection · motion · brightness spikes</div></div>
+              <span class="ps-tag t-w" id="ps3b">waiting</span>
+            </div>
+            <div class="ps" id="ps4">
+              <span class="ps-icon">📊</span>
+              <div class="ps-info"><div class="ps-name">Score & Rank Highlights</div><div class="ps-sub">Combined signal scoring</div></div>
+              <span class="ps-tag t-w" id="ps4b">waiting</span>
+            </div>
+          </div>
+          <button class="btn btn-o btn-full" onclick="startAnalysis()" id="runBtn">🎮 Detect Gaming Highlights</button>
+        </div>
+      </div>
+
+      <!-- AI HIGHLIGHTS -->
+      <div class="panel">
+        <div class="ph">
+          <span class="ph-icon">⚡</span>
+          <span class="ph-title">Detected Highlights</span>
+          <span class="ph-extra" id="hlCount">0 found</span>
+        </div>
+        <div class="pb">
+          <div class="hl-list" id="hlList">
+            <div class="empty">Run detection to find highlights<br><span style="font-size:10px;">Gunshots · Explosions · Killstreaks · Reactions</span></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- CLIP EXPORTER -->
+      <div class="panel">
+        <div class="ph"><span class="ph-icon">✂️</span><span class="ph-title">Clip Exporter</span><span class="ph-extra" id="selInfo">No highlight selected</span></div>
+        <div class="pb">
+
+          <!-- TIME RANGE -->
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:14px;">
+            <div>
+              <div class="slbl">Start Time</div>
+              <input type="text" class="url-in" id="t0" value="00:00:00" style="font-size:16px;text-align:center;" />
+            </div>
+            <div>
+              <div class="slbl">End Time</div>
+              <input type="text" class="url-in" id="t1" value="00:00:30" style="font-size:16px;text-align:center;" />
+            </div>
+          </div>
+
+          <!-- TEXT OVERLAY -->
+          <div class="text-overlay-section">
+            <div class="to-label">Text Overlay (Optional)</div>
+            <input type="text" class="text-in" id="overlayText" placeholder='e.g. "INSANE CLUTCH!" or "Arc Raiders W 🔥"' maxlength="60" />
+            <div class="slbl">Text Style</div>
+            <div class="style-grid">
+              <button class="style-btn active" data-style="modern" onclick="setStyle(this)">Modern</button>
+              <button class="style-btn" data-style="fire" onclick="setStyle(this)">🔥 Fire</button>
+              <button class="style-btn" data-style="minimal" onclick="setStyle(this)">Minimal</button>
+              <button class="style-btn" data-style="top" onclick="setStyle(this)">Top Bar</button>
+            </div>
+            <div class="style-preview" id="stylePreview">
+              <span style="font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;color:white;text-shadow:0 0 10px rgba(0,0,0,.8);background:rgba(0,0,0,.5);padding:4px 12px;border-radius:4px;">Preview</span>
+            </div>
+          </div>
+
+          <!-- EXPORT BUTTON -->
+          <button class="btn btn-dl btn-full" onclick="exportClip()" id="exportBtn">
+            ⬇ Export Clip
+          </button>
+          <div style="text-align:center;font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);margin-top:8px;" id="exportStatus"></div>
+        </div>
+      </div>
+
+      <!-- SAVED CLIPS -->
+      <div class="panel">
+        <div class="ph"><span class="ph-icon">🎬</span><span class="ph-title">Saved Clips</span><span class="ph-extra" id="clipCount">0 clips</span></div>
+        <div class="pb"><div id="clipList"><div class="empty">No clips yet</div></div></div>
+      </div>
+
+    </div>
+
+    <!-- RIGHT SIDEBAR -->
+    <div class="right">
+
+      <div class="panel">
+        <div class="ph"><span class="ph-icon">🎮</span><span class="ph-title">Game Profile</span></div>
+        <div class="pb" style="padding:12px 15px;">
+          <div class="slbl">Game</div>
+          <select class="sel-in" style="margin-bottom:12px;" onchange="updateProfile(this.value)">
+            <option value="arc">Arc Raiders</option>
+            <option value="fps">Generic FPS</option>
+            <option value="br">Battle Royale</option>
+            <option value="any">Any Game</option>
+          </select>
+          <div class="divider"></div>
+          <div class="sr">
+            <div><div class="sn">Gunshot Detection</div><div class="ss">Detect firearm audio</div></div>
+            <button class="tgl on" id="tog-gun" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="sr">
+            <div><div class="sn">Explosion Events</div><div class="ss">Heavy weapons / grenades</div></div>
+            <button class="tgl on" id="tog-boom" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="sr">
+            <div><div class="sn">Voice Reactions</div><div class="ss">Streamer hype moments</div></div>
+            <button class="tgl on" id="tog-voice" onclick="this.classList.toggle('on')"></button>
+          </div>
+          <div class="sr">
+            <div><div class="sn">Killstreak Detection</div><div class="ss">Rapid fire sequences</div></div>
+            <button class="tgl on" id="tog-kill" onclick="this.classList.toggle('on')"></button>
+          </div>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><span class="ph-icon">⚙️</span><span class="ph-title">Clip Settings</span></div>
+        <div class="pb" style="padding:12px 15px;">
+          <div class="slbl">Clip Length</div>
+          <input type="range" min="10" max="60" value="30" style="width:100%;accent-color:var(--orange);margin-bottom:4px;" oninput="document.getElementById('clipLenV').textContent=this.value+'s'">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:12px;">Length: <span id="clipLenV">30s</span></div>
+          <div class="slbl">Detection Sensitivity</div>
+          <input type="range" min="30" max="90" value="55" style="width:100%;accent-color:var(--red);margin-bottom:4px;" oninput="document.getElementById('sensV').textContent=this.value+'%'">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);margin-bottom:12px;">Sensitivity: <span id="sensV">55%</span></div>
+          <div class="divider"></div>
+          <div class="slbl">Video Quality</div>
+          <select class="sel-in">
+            <option>720p — Fast export</option>
+            <option selected>1080p — Balanced</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="panel">
+        <div class="ph"><span class="ph-icon">📋</span><span class="ph-title">How It Works</span></div>
+        <div class="pb" style="padding:12px 15px;">
+          <div style="font-family:'Share Tech Mono',monospace;font-size:11px;color:var(--muted);line-height:2.2;">
+            <div>🔫 <span style="color:var(--text);">Gunshot</span> — high onset + RMS spike</div>
+            <div>💥 <span style="color:var(--text);">Explosion</span> — low freq burst detection</div>
+            <div>🎙 <span style="color:var(--text);">Voice</span> — centroid + energy spike</div>
+            <div>⚡ <span style="color:var(--text);">Killstreak</span> — rapid onset counting</div>
+            <div>🎥 <span style="color:var(--text);">Video</span> — flash + motion boost</div>
+            <div style="margin-top:8px;color:var(--green);">💰 Cost: $0.00 forever</div>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<div class="notif" id="notif"><div class="nt" id="ntT"></div><div class="nb" id="ntB"></div></div>
+
+<script>
+// ── CONFIG ────────────────────────────────────────────────────────────────────
+// Change this to your Railway URL after deploy:
+const BE = 'http://localhost:5000';
+
+let jobId = null, pollTimer = null;
+let highlights = [], clips = [], clipN = 0;
+let selectedHL = null;
+let currentFmt = 'video';
+let currentStyle = 'modern';
+
+// ── BACKEND CHECK ─────────────────────────────────────────────────────────────
+async function checkBE() {
+  try {
+    const r = await fetch(BE + '/health', {signal: AbortSignal.timeout(3000)});
+    const d = await r.json();
+    const el = document.getElementById('beStatus');
+    el.style.color = 'var(--green)';
+    el.textContent = '✓ Backend Online';
+  } catch {
+    const el = document.getElementById('beStatus');
+    el.style.color = 'var(--red)';
+    el.textContent = '✗ Backend Offline';
+  }
+}
+checkBE();
+
+// ── PLATFORM DETECT ───────────────────────────────────────────────────────────
+document.getElementById('urlIn').addEventListener('input', function() {
+  const v = this.value.toLowerCase(), t = document.getElementById('platTag');
+  if (v.includes('youtube') || v.includes('youtu.be')) {
+    t.className = 'plat on plat-yt'; t.textContent = '▶ YouTube';
+  } else if (v.includes('twitch.tv')) {
+    t.className = 'plat on plat-tw'; t.textContent = '◆ Twitch';
+  } else t.className = 'plat';
+});
+
+// ── FORMAT ────────────────────────────────────────────────────────────────────
+function setFmt(f, btn) {
+  currentFmt = f;
+  document.querySelectorAll('.fmt-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  document.getElementById('sFmt').textContent = f === 'shorts' ? '9:16' : '16:9';
+  notif('Format Set', f === 'shorts' ? 'Shorts mode: 9:16 vertical crop' : 'Video mode: 16:9 landscape', true);
+}
+
+// ── TEXT STYLE ────────────────────────────────────────────────────────────────
+function setStyle(btn) {
+  document.querySelectorAll('.style-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  currentStyle = btn.dataset.style;
+  updatePreview();
+}
+
+function updatePreview() {
+  const text = document.getElementById('overlayText').value || 'INSANE CLUTCH!';
+  const prev = document.getElementById('stylePreview');
+  const styles = {
+    modern: `font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:white;background:rgba(0,0,0,.6);padding:5px 14px;border-radius:4px;border:1px solid rgba(255,255,255,.2)`,
+    fire: `font-family:'Rajdhani',sans-serif;font-size:15px;font-weight:700;color:#ff8c00;text-shadow:0 0 10px #ff4400`,
+    minimal: `font-family:'Exo 2',sans-serif;font-size:13px;font-weight:400;color:rgba(255,255,255,.88)`,
+    top: `font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:700;color:white;background:rgba(0,0,0,.7);padding:4px 12px;border-bottom:2px solid var(--orange)`
+  };
+  prev.innerHTML = `<span style="${styles[currentStyle]}">${text}</span>`;
+}
+
+document.getElementById('overlayText').addEventListener('input', updatePreview);
+updatePreview();
+
+// ── ANALYSIS ──────────────────────────────────────────────────────────────────
+async function startAnalysis() {
+  const url = document.getElementById('urlIn').value.trim();
+  if (!url) { notif('No URL', 'Paste a YouTube or Twitch stream URL.', false); return; }
+
+  document.getElementById('mainBtn').disabled = true;
+  document.getElementById('runBtn').disabled = true;
+  document.getElementById('aiSt').classList.add('on');
+  document.getElementById('progWrap').style.display = 'block';
+  setStatus('o', 'Sending to backend...');
+  setPipe(1, 'run');
+
+  try {
+    const res = await fetch(BE + '/analyze', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({url, format: currentFmt})
+    });
+    if (!res.ok) throw new Error();
+    const d = await res.json();
+    jobId = d.job_id;
+    pollTimer = setInterval(pollJob, 1200);
+  } catch {
+    notif('Demo Mode', 'Backend offline — showing demo highlights.', false);
+    runDemo();
+  }
+}
+
+async function pollJob() {
+  try {
+    const r = await fetch(`${BE}/status/${jobId}`);
+    const j = await r.json();
+    updateProg(j.progress, j.step);
+    if (j.progress >= 5)  setPipe(1, j.progress >= 22 ? 'done' : 'run');
+    if (j.progress >= 22) setPipe(2, j.progress >= 65 ? 'done' : 'run');
+    if (j.progress >= 65) setPipe(3, j.progress >= 82 ? 'done' : 'run');
+    if (j.progress >= 82) setPipe(4, j.progress >= 100 ? 'done' : 'run');
+    if (j.status === 'done') { clearInterval(pollTimer); finish(j.highlights); }
+    if (j.status === 'error') { clearInterval(pollTimer); resetUI(); notif('Error', j.step, false); }
+  } catch { clearInterval(pollTimer); resetUI(); }
+}
+
+function runDemo() {
+  const steps = [[8,'📥 Downloading stream...'],[25,'🎮 Detecting gunshots + explosions...'],[60,'🎥 Analyzing video frames...'],[88,'📊 Ranking highlights...'],[100,'✓ Done']];
+  let i = 0;
+  const iv = setInterval(() => {
+    if (i >= steps.length) { clearInterval(iv); finish(getDemoHL()); return; }
+    const [p, s] = steps[i];
+    updateProg(p, s);
+    if (p >= 8)  setPipe(1, p >= 25 ? 'done' : 'run');
+    if (p >= 25) setPipe(2, p >= 60 ? 'done' : 'run');
+    if (p >= 60) setPipe(3, p >= 88 ? 'done' : 'run');
+    if (p >= 88) setPipe(4, p >= 100 ? 'done' : 'run');
+    i++;
+  }, 700);
+}
+
+function getDemoHL() {
+  return [
+    {final_score:97,title:'KILLSTREAK!',event_type:'killstreak',tag:'killstreak',start_fmt:'00:23:14',end_fmt:'00:23:49',start_sec:1394,end_sec:1429,duration:35,clip_reason:'8 rapid fire shots detected in 3s window',signals:{onset:.91,rms:.84,lowfreq:.62,rapid:8}},
+    {final_score:93,title:'BOOM! Explosion',event_type:'explosion',tag:'explosion',start_fmt:'00:41:08',end_fmt:'00:41:43',start_sec:2468,end_sec:2503,duration:35,clip_reason:'Heavy weapon fired — low freq burst + flash',signals:{onset:.83,rms:.79,lowfreq:.91,rapid:2}},
+    {final_score:88,title:'Gunfight detected',event_type:'gunshot',tag:'gunshot',start_fmt:'01:07:22',end_fmt:'01:07:57',start_sec:4042,end_sec:4077,duration:35,clip_reason:'Sharp transient spike — gunshot pattern',signals:{onset:.88,rms:.71,lowfreq:.44,rapid:3}},
+    {final_score:82,title:'Streamer reacts!',event_type:'voice',tag:'voice',start_fmt:'01:31:44',end_fmt:'01:32:19',start_sec:5504,end_sec:5539,duration:35,clip_reason:'Voice centroid spike — hype reaction',signals:{onset:.62,rms:.77,lowfreq:.31,rapid:1}},
+    {final_score:74,title:'Rapid fire sequence',event_type:'killstreak',tag:'killstreak',start_fmt:'01:52:09',end_fmt:'01:52:44',start_sec:6729,end_sec:6764,duration:35,clip_reason:'5 shots rapid fire + motion spike',signals:{onset:.74,rms:.65,lowfreq:.52,rapid:5}},
+  ];
+}
+
+function finish(data) {
+  highlights = data;
+  document.getElementById('aiSt').classList.remove('on');
+  document.getElementById('progWrap').style.display = 'none';
+  document.getElementById('mainBtn').disabled = false;
+  document.getElementById('runBtn').disabled = false;
+  setStatus('g', `✓ ${data.length} highlights detected`);
+  renderHL(data);
+  document.getElementById('sHL').textContent = data.length;
+  document.getElementById('hlCount').textContent = data.length + ' found';
+  notif('Detection Complete!', `Found ${data.length} gaming highlights!`, true);
+}
+
+function resetUI() {
+  document.getElementById('aiSt').classList.remove('on');
+  document.getElementById('progWrap').style.display = 'none';
+  document.getElementById('mainBtn').disabled = false;
+  document.getElementById('runBtn').disabled = false;
+  setStatus('g', 'Ready');
+}
+
+// ── RENDER HIGHLIGHTS ─────────────────────────────────────────────────────────
+function renderHL(data) {
+  const list = document.getElementById('hlList');
+  if (!data.length) { list.innerHTML = '<div class="empty">No highlights found</div>'; return; }
+  list.innerHTML = data.map((h, i) => {
+    const s = h.signals || {};
+    const oH = Math.round((s.onset||0)*18), rH = Math.round((s.rms||0)*18), lH = Math.round((s.lowfreq||0)*18);
+    const tagClass = {killstreak:'et-killstreak',explosion:'et-explosion',gunshot:'et-gunshot',voice:'et-voice',hype:'et-hype'}[h.tag]||'et-hype';
+    return `
+    <div class="hl" onclick="selectHL(this,${i})">
+      <div class="hl-score">${h.final_score}</div>
+      <div class="hl-info">
+        <div class="hl-title">${h.title}</div>
+        <div class="hl-meta">${h.start_fmt} → ${h.end_fmt} · ${h.duration}s</div>
+        <div class="hl-reason">${h.clip_reason}</div>
+        <div class="sig-row">
+          <div class="sig-b"><div class="sig-track"><div class="sig-fill" style="height:${oH}px;background:var(--orange)"></div></div><div class="sig-l">ONS</div></div>
+          <div class="sig-b"><div class="sig-track"><div class="sig-fill" style="height:${rH}px;background:var(--red)"></div></div><div class="sig-l">RMS</div></div>
+          <div class="sig-b"><div class="sig-track"><div class="sig-fill" style="height:${lH}px;background:var(--cyan)"></div></div><div class="sig-l">LOW</div></div>
+          ${s.rapid>0?`<div class="sig-b" style="margin-left:4px;"><div style="font-family:'Share Tech Mono',monospace;font-size:10px;color:var(--gold);">×${s.rapid}</div><div class="sig-l">SHOTS</div></div>`:''}
+        </div>
+      </div>
+      <div class="hl-right">
+        <span class="etag ${tagClass}">${h.tag}</span>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function selectHL(el, i) {
+  document.querySelectorAll('.hl').forEach(x => x.classList.remove('sel'));
+  el.classList.add('sel');
+  selectedHL = highlights[i];
+  document.getElementById('t0').value = selectedHL.start_fmt;
+  document.getElementById('t1').value = selectedHL.end_fmt;
+  document.getElementById('selInfo').textContent = selectedHL.title;
+  notif('Highlight Loaded', selectedHL.title + ' ready to export.', true);
+}
+
+// ── EXPORT CLIP ───────────────────────────────────────────────────────────────
+async function exportClip() {
+  if (!selectedHL && !jobId) {
+    notif('No Highlight', 'Select a highlight first or analyze a stream.', false);
+    return;
+  }
+
+  const t0 = toSecs(document.getElementById('t0').value);
+  const t1 = toSecs(document.getElementById('t1').value);
+  if (t1 <= t0) { notif('Invalid Range', 'End must be after start.', false); return; }
+
+  const overlayText = document.getElementById('overlayText').value.trim();
+  document.getElementById('exportBtn').disabled = true;
+  document.getElementById('exportStatus').textContent = '⏳ Processing clip... (30–60s)';
+
+  try {
+    const res = await fetch(BE + '/clip', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        job_id: jobId,
+        start: t0, end: t1,
+        format: currentFmt,
+        text: overlayText,
+        text_style: currentStyle
+      })
+    });
+
+    if (!res.ok) throw new Error(await res.text());
+
+    const blob = await res.blob();
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `clipforge_${currentFmt}_${Date.now()}.mp4`;
+    a.click();
+    URL.revokeObjectURL(url);
+
+    clipN++;
+    const dur = t1 - t0;
+    clips.unshift({id: clipN, name: selectedHL ? selectedHL.title : `Clip #${clipN}`, start: document.getElementById('t0').value, end: document.getElementById('t1').value, duration: dur, fmt: currentFmt, text: overlayText});
+    renderClips();
+    document.getElementById('sClips').textContent = clips.length;
+    document.getElementById('clipCount').textContent = clips.length + ' clip' + (clips.length !== 1 ? 's' : '');
+    document.getElementById('exportStatus').textContent = '✓ Download started!';
+    notif('Clip Exported!', `${dur}s ${currentFmt} clip downloaded.`, true);
+
+  } catch (e) {
+    document.getElementById('exportStatus').textContent = '✗ Export failed — backend needed';
+    notif('Export Failed', 'Make sure backend is running. Error: ' + e.message, false);
+  } finally {
+    document.getElementById('exportBtn').disabled = false;
+    setTimeout(() => document.getElementById('exportStatus').textContent = '', 4000);
+  }
+}
+
+function renderClips() {
+  const list = document.getElementById('clipList');
+  const em = ['🎮','⚡','🔫','💥','🎯','🏆'];
+  if (!clips.length) { list.innerHTML = '<div class="empty">No clips yet</div>'; return; }
+  list.innerHTML = clips.map(c => `
+    <div class="clip-card">
+      <div class="clip-thumb">
+        <span>${em[(c.id-1)%em.length]}</span>
+        <span class="clip-dur">${c.duration}s</span>
+        <span class="clip-fmt">${c.fmt === 'shorts' ? '9:16' : '16:9'}</span>
+      </div>
+      <div class="clip-body">
+        <div class="clip-name">${c.name}</div>
+        <div class="clip-detail">${c.start} → ${c.end}${c.text ? ' · "'+c.text+'"' : ''}</div>
+        <div class="clip-acts">
+          <button class="btn-sm btn-sm-dl" onclick="reExport(${c.id})">⬇ Re-export</button>
+          <button class="btn-sm btn-sm-del" onclick="delClip(${c.id})">✕</button>
+        </div>
+      </div>
+    </div>`).join('');
+}
+
+function reExport(id) { notif('Re-export', 'Select the highlight and click Export Clip again.', true); }
+function delClip(id) {
+  clips = clips.filter(c => c.id !== id);
+  renderClips();
+  document.getElementById('sClips').textContent = clips.length;
+  document.getElementById('clipCount').textContent = clips.length + ' clip' + (clips.length !== 1 ? 's' : '');
+}
+
+// ── HELPERS ───────────────────────────────────────────────────────────────────
+function updateProg(p, s) {
+  document.getElementById('progFill').style.width = p + '%';
+  document.getElementById('progPct').textContent = Math.floor(p) + '%';
+  document.getElementById('progStep').textContent = s;
+  document.getElementById('aiTxt').textContent = s;
+  document.getElementById('ppct').textContent = Math.floor(p) + '%';
+}
+
+function setPipe(n, st) {
+  const e = document.getElementById('ps' + n), b = document.getElementById('ps' + n + 'b');
+  e.className = 'ps' + (st === 'run' ? ' run' : st === 'done' ? ' done' : '');
+  b.className = 'ps-tag ' + (st === 'run' ? 't-r' : st === 'done' ? 't-d' : 't-w');
+  b.textContent = st === 'run' ? 'running…' : st === 'done' ? '✓ done' : 'waiting';
+}
+
+function setStatus(c, m) {
+  const d = document.getElementById('sdot');
+  d.className = 'sd sd-' + c;
+  document.getElementById('stxt').textContent = m;
+}
+
+function fmt(s) { s = parseInt(s); return `${String(Math.floor(s/3600)).padStart(2,'0')}:${String(Math.floor((s%3600)/60)).padStart(2,'0')}:${String(s%60).padStart(2,'0')}`; }
+function toSecs(t) { const p = t.split(':').map(Number); return p[0]*3600+p[1]*60+p[2]; }
+
+function updateProfile(val) {
+  const profiles = {
+    arc: 'Arc Raiders: gunshot + explosion + killstreak tuned',
+    fps: 'FPS: high gunshot sensitivity',
+    br: 'Battle Royale: explosion + killstreak focus',
+    any: 'Generic: all events balanced'
+  };
+  notif('Profile Updated', profiles[val], true);
+}
+
+let _nt;
+function notif(t, b, ok) {
+  document.getElementById('ntT').textContent = t;
+  document.getElementById('ntB').textContent = b;
+  const n = document.getElementById('notif');
+  document.getElementById('ntT').style.color = ok ? 'var(--orange)' : 'var(--red)';
+  n.style.borderColor = ok ? 'var(--border2)' : 'rgba(255,45,74,.4)';
+  n.classList.add('on');
+  clearTimeout(_nt);
+  _nt = setTimeout(() => n.classList.remove('on'), 3800);
+}
+</script>
+</body>
+</html>
