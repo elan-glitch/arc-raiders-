@@ -20,6 +20,9 @@ import shutil
 
 app = Flask(__name__)
 CORS(app)
+@app.route('/')
+def home():
+    return jsonify({'status': 'ClipForge running'})
 
 JOBS = {}
 CLIPS_DIR = tempfile.mkdtemp()
